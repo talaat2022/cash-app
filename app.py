@@ -86,17 +86,18 @@ if st.button("🚀 ابدأ عملية الشحن الآن", use_container_width
                 print("\n" + "="*50)
                 print("--- [1] VODAFONE SEAMLESS RESPONSE ---")
                 print(f"Status Code: {response_seamless.status_code}")
-                print(response_seamless.text[:1000])  # طباعة أول 1000 حرف منعاً للازدحام
+                print(response_seamless.text)
                 print("="*50 + "\n")
 
                 # فحص الرد قبل محاولة قراءة JSON لتفادي خطأ الإغلاق المفاجئ
                 try:
                     seamless_data = response_seamless.json()
                 except Exception:
-                    st.error(f"❌ خطأ: سيرفر فودافون لم يرسل بيانات JSON صالحة. (Status: {response_seamless.status_code})")
-                    st.warning("⚠️ حماية فودافون ترفض السيرفر السحابي الحالي، تطلب عادةً الاتصال عبر باقة خط فودافون مصر مباشرة.")
-                    with st.expander("🔍 اضغط هنا لعرض رد السيرفر المباشر الفاشل:"):
-                        st.code(response_seamless.text)
+                    st.error(f"❌ خطأ: سيرفر فودافون أرجع الرمز ({response_seamless.status_code}) والرد ليس JSON صالحة.")
+                    
+                    # 🟢 تعديل ذكي: إظهار نص الرد الحقيقي القادم من فودافون مباشرة على الشاشة
+                    st.info("🔍 الرد الوارد من سيرفر فودافون يظهر بالأسفل:")
+                    st.code(response_seamless.text if response_seamless.text else "الرد فارغ تماماً")
                     st.stop()
 
                 seamless_token = seamless_data.get('seamlessToken')
@@ -121,15 +122,14 @@ if st.button("🚀 ابدأ عملية الشحن الآن", use_container_width
                     print("\n" + "="*50)
                     print("--- [2] VODAFONE ACCESS TOKEN RESPONSE ---")
                     print(f"Status Code: {response_token.status_code}")
-                    print(response_token.text[:1000])
+                    print(response_token.text)
                     print("="*50 + "\n")
 
                     try:
                         token_data = response_token.json()
                     except Exception:
                         st.error(f"❌ خطأ: فشل قراءة صلاحية الدخول من السيرفر. (Status: {response_token.status_code})")
-                        with st.expander("🔍 عرض رد السيرفر الفاشل (Access Token):"):
-                            st.code(response_token.text)
+                        st.code(response_token.text)
                         st.stop()
 
                     access_token = token_data.get('access_token')
@@ -141,7 +141,7 @@ if st.button("🚀 ابدأ عملية الشحن الآن", use_container_width
                     else:
                         st.error("❌ فشل الحصول على صلاحية الدخول (Access Token)، تأكد من الرقم السري.")
                 else:
-                    st.error("❌ فشل الاتصال الأولي (Seamless Token)، تأكد من اتصال السيرفر.")
+                    st.error("❌ فشل الاتصال الأولي (Seamless Token)، لم يتم العثور على التوكن في الرد.")
 
             except Exception as e:
                 st.error(f"❌ حدث خطأ غير متوقع أثناء الاتصال بالخادم: {e}")
