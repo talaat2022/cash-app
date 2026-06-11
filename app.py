@@ -108,5 +108,6 @@ if st.button("🚀 ابدأ عملية الشحن الآن", use_container_width
                 st.success(f"🔄 تم تجهيز طلب الشحن للمنتج [{selected_name}] إلى الرقم [{receiver}] بنجاح وجاري التنفيذ.")
 
             except Exception as e:
-                st.error(f"❌ حدث خطأ أثناء الاتصال بالخادم: {e}")
+                st.error(f"❌ حدث خطأ أثناء الاتصال بالخادم: {e}"
+                         
                 
