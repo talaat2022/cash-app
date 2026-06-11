@@ -196,4 +196,5 @@ try:
         print('❌ فشل: رصيدك غير كافي أو خطأ آخر')
         print(f'الرد: {result}')
 except:
-    print(f'❌ خطأ: {response_order.
+    print(f'❌ خطأ: {response_order}')
+    
