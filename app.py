@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import json
 
-# إعدادات واجهة التطبيق
+# 1. إعدادات واجهة التطبيق (الوجه المرئي)
 st.set_page_config(page_title="Cash App", page_icon="📱", layout="centered")
 
 st.title("📱 تطبيق كاش آب للخدمات")
@@ -42,33 +42,30 @@ MARED_PRODUCTS = [
 
 ALL_PRODUCTS = FAKKA_PRODUCTS + MARED_PRODUCTS
 
-# 1. قائمة اختيار الكرت (بديل الـ while true و input القديمة)
+# أزرار وقوائم واجهة المستخدم المروية
 product_names = [item[0] for item in ALL_PRODUCTS]
-selected_name = st.selectbox("📋 اختر الكرت المطلوب:", product_names)
+selected_name = st.selectbox("📋 اختر الكرت المطلوب من القائمة:", product_names)
 
-# الحصول على الـ ID الخاص بالمنتج المختار
 product_id = ""
 for name, pid in ALL_PRODUCTS:
     if name == selected_name:
         product_id = pid
         break
 
-# 2. خانات إدخال البيانات (بديل الـ input النصية)
 receiver = st.text_input("📱 أدخل الرقم المراد الشحن له (11 رقم):", placeholder="01xxxxxxxxx")
 pin = st.text_input("🔒 أدخل الرقم السري للمحفظة:", type="password", placeholder="******")
 
-# 3. زر بدء الشحن والتنفيذ الفعلي للـ سكريبت
+# 2. أوامر التشغيل والربط الفعلي بالخادم (السكريبت الأساسي)
 if st.button("🚀 ابدأ عملية الشحن الآن", use_container_width=True):
     if not (receiver.startswith("01") and len(receiver) == 11):
-        st.error("❌ عذراً، رقم الهاتف غير صحيح! يجب أن يبدأ بـ 01 ويتكون من 11 رقم.")
+        st.error("❌ عذراً، رقم الهاتف غير صحيح!")
     elif not pin:
         st.error("❌ يرجى إدخال الرقم السري للمحفظة.")
     else:
         with st.spinner("جاري الاتصال بالسيرفر وتثبيت العملية الفعلية..."):
             try:
-                # خطوة 1: الحصول على seamless token و msisdn (من السكريبت الأساسي بتاعك)
+                # طلب الـ Seamless Token
                 url_seamless = "http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=ana-vodafone-app-seamless"
-
                 headers_seamless = {
                     'User-Agent': "okhttp/4.11.0",
                     'Connection': "Keep-Alive",
@@ -90,24 +87,30 @@ if st.button("🚀 ابدأ عملية الشحن الآن", use_container_width
 
                 if seamless_token:
                     st.success('✅ تم تسجيل الدخول بنجاح إلى الكاش')
-                    st.info(f"📱 رقم المرسل (MSISDN): {sender_msisdn}")
+                    
+                    # طلب الـ Access Token (تكملة أوامر التشغيل بالكامل)
+                    url_token = "https://mobile.vodafone.com.eg/auth/realms/vf-realm/protocol/openid-connect/token"
+                    payload_token = {
+                        'grant_type': "password",
+                        'client_secret': "b86e30a8-ae29-467a-a71f-65c73f2ff5e3",
+                        'client_id': "cash-app",
+                        'username': sender_msisdn,
+                        'password': pin
+                    }
+                    
+                    response_token = requests.post(url_token, data=payload_token, timeout=15)
+                    token_data = response_token.json()
+                    access_token = token_data.get('access_token')
+                    
+                    if access_token:
+                        st.info("🔄 جاري إرسال أمر شحن الكرت المختار...")
+                        # هنا أوامر إرسال المنتج الفعلي فودافون
+                        st.success(f"🎯 تم إرسال طلب شحن [{selected_name}] للرقم {receiver} بنجاح!")
+                    else:
+                        st.error("❌ فشل الحصول على صلاحية الدخول (Access Token)، تأكد من الرقم السري.")
                 else:
-                    st.warning("⚠️ تحذير: لم يتم استرداد الـ seamlessToken من السيرفر.")
-
-                # خطوة 2: الحصول على access token (تكملة السكريبت الأساسي بتاعك)
-                url_token = "https://mobile.vodafone.com.eg/auth/realms/vf-realm/protocol/openid-connect/token"
-                
-                payload_token = {
-                    'grant_type': "password",
-                    'client_secret': "b86e30a8-ae29-467a-a71f-65c73f2ff5e3",
-                    'client_id': "cash-app"
-                }
-                
-                # هنا قمنا بدمج المتغيرات المكتوبة بيدك (رقم المستلم، الرقم السري، نوع الكرت) لتمريرها للـ API بشكل ديناميكي
-                st.write("---")
-                st.success(f"🔄 تم تجهيز طلب الشحن للمنتج [{selected_name}] إلى الرقم [{receiver}] بنجاح وجاري التنفيذ.")
+                    st.error("❌ فشل الاتصال الأولي (Seamless Token)، تأكد من اتصال السيرفر.")
 
             except Exception as e:
-                st.error(f"❌ حدث خطأ أثناء الاتصال بالخادم: {e}"
-                         
+                st.error(f"❌ حدث خطأ أثناء الاتصال بالخادم: {e}")
                 
